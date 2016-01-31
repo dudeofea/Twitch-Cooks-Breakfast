@@ -1,6 +1,6 @@
 # Set all the variables necessary to connect to Twitch IRC
 from Adafruit_MotorHAT import Adafruit_MotorHAT, Adafruit_DCMotor
-import cfg, socket, time, re, atexit
+import cfg, socket, time, re, atexit, datetime
 
 # create a default object, no changes to I2C address or frequency
 mh = Adafruit_MotorHAT(addr=0x60)
@@ -17,15 +17,6 @@ shoulder_motor = 	mh.getMotor(3)
 elbow_motor = 		mh.getMotor(1)
 wrist_motor = 		mh.getMotor(2)
 
-def chat(sock, msg):
-	sock.send("PRIVMSG #{} :{}".format(cfg.CHAN, msg))
-
-def ban(sock, user):
-	chat(sock, ".ban {}".format(user))
-
-def timeout(sock, user, secs=60):
-	chat(sock, ".timeout {}".format(user, secs))
-
 CHAT_MSG = re.compile(r"^:\w+!\w+@\w+\.tmi\.twitch\.tv PRIVMSG #\w+ :")
 
 # network functions go here
@@ -35,9 +26,15 @@ s.send("PASS {}\r\n".format(cfg.PASS).encode("utf-8"))
 s.send("NICK {}\r\n".format(cfg.NICK).encode("utf-8"))
 s.send("JOIN {}\r\n".format(cfg.CHAN).encode("utf-8"))
 
+done_wait = datetime.datetime.now()
+rot_time = 0.8
+wait_time = 12
+
 while True:
 	response = s.recv(1024).decode("utf-8")
 	for r in response.split('\r\n'):
+		if datetime.datetime.now() < done_wait:
+			continue
 		if r == "PING :tmi.twitch.tv\r\n":
 		    s.send("PONG :tmi.twitch.tv\r\n".encode("utf-8"))
 		    print("Pong")
@@ -49,48 +46,55 @@ while True:
 				print username, "Left"
 				lr_motor.setSpeed(255)
 				lr_motor.run(Adafruit_MotorHAT.BACKWARD)
-				time.sleep(0.1)
+				time.sleep(rot_time)
 				lr_motor.run(Adafruit_MotorHAT.RELEASE)
+				done_wait = datetime.datetime.now() + datetime.timedelta(seconds=wait_time)
 			elif message.lower() in ['r', 'right']:
 				print username, 'Right'
 				lr_motor.setSpeed(255)
 				lr_motor.run(Adafruit_MotorHAT.FORWARD)
-				time.sleep(0.1)
+				time.sleep(rot_time)
 				lr_motor.run(Adafruit_MotorHAT.RELEASE)
+				done_wait = datetime.datetime.now() + datetime.timedelta(seconds=wait_time)
 			elif message.lower() in ['su', 'shoulder up']:
 				print username, 'Shoulder Up'
 				shoulder_motor.setSpeed(255)
 				shoulder_motor.run(Adafruit_MotorHAT.BACKWARD)
-				time.sleep(0.1)
+				time.sleep(rot_time)
 				shoulder_motor.run(Adafruit_MotorHAT.RELEASE)
+				done_wait = datetime.datetime.now() + datetime.timedelta(seconds=wait_time)
 			elif message.lower() in ['sd', 'shoulder down']:
 				print username, 'Shoulder Down'
 				shoulder_motor.setSpeed(255)
 				shoulder_motor.run(Adafruit_MotorHAT.FORWARD)
-				time.sleep(0.1)
+				time.sleep(rot_time)
 				shoulder_motor.run(Adafruit_MotorHAT.RELEASE)
+				done_wait = datetime.datetime.now() + datetime.timedelta(seconds=wait_time)
 			elif message.lower() in ['eu', 'elbow up']:
 				print username, 'Elbow Up'
 				elbow_motor.setSpeed(255)
 				elbow_motor.run(Adafruit_MotorHAT.FORWARD)
-				time.sleep(0.1)
+				time.sleep(rot_time)
 				elbow_motor.run(Adafruit_MotorHAT.RELEASE)
+				done_wait = datetime.datetime.now() + datetime.timedelta(seconds=wait_time)
 			elif message.lower() in ['ed', 'elbow down']:
 				print username, 'Elbow Down'
 				elbow_motor.setSpeed(255)
 				elbow_motor.run(Adafruit_MotorHAT.BACKWARD)
-				time.sleep(0.1)
+				time.sleep(rot_time)
 				elbow_motor.run(Adafruit_MotorHAT.RELEASE)
+				done_wait = datetime.datetime.now() + datetime.timedelta(seconds=wait_time)
 			elif message.lower() in ['wu', 'wrist up']:
 				print username, 'Wrist Up'
 				wrist_motor.setSpeed(255)
 				wrist_motor.run(Adafruit_MotorHAT.FORWARD)
-				time.sleep(0.1)
+				time.sleep(rot_time)
 				wrist_motor.run(Adafruit_MotorHAT.RELEASE)
+				done_wait = datetime.datetime.now() + datetime.timedelta(seconds=wait_time)
 			elif message.lower() in ['wd', 'wrist down']:
 				print username, 'Wrist Down'
 				wrist_motor.setSpeed(255)
 				wrist_motor.run(Adafruit_MotorHAT.BACKWARD)
-				time.sleep(0.1)
+				time.sleep(rot_time)
 				wrist_motor.run(Adafruit_MotorHAT.RELEASE)
-		    #print "Unknown:", r
+				done_wait = datetime.datetime.now() + datetime.timedelta(seconds=wait_time)
