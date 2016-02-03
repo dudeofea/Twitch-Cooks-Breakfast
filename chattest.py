@@ -1,21 +1,21 @@
 # Set all the variables necessary to connect to Twitch IRC
-from Adafruit_MotorHAT import Adafruit_MotorHAT, Adafruit_DCMotor
+#from Adafruit_MotorHAT import Adafruit_MotorHAT, Adafruit_DCMotor
 import cfg, socket, time, re, atexit, datetime
 
 # create a default object, no changes to I2C address or frequency
-mh = Adafruit_MotorHAT(addr=0x60)
-# recommended for auto-disabling motors on shutdown!
-def turnOffMotors():
-	mh.getMotor(1).run(Adafruit_MotorHAT.RELEASE)
-	mh.getMotor(2).run(Adafruit_MotorHAT.RELEASE)
-	mh.getMotor(3).run(Adafruit_MotorHAT.RELEASE)
-	mh.getMotor(4).run(Adafruit_MotorHAT.RELEASE)
-atexit.register(turnOffMotors)
-
-lr_motor = 			mh.getMotor(4)
-shoulder_motor = 	mh.getMotor(3)
-elbow_motor = 		mh.getMotor(1)
-wrist_motor = 		mh.getMotor(2)
+# mh = Adafruit_MotorHAT(addr=0x60)
+# # recommended for auto-disabling motors on shutdown!
+# def turnOffMotors():
+# 	mh.getMotor(1).run(Adafruit_MotorHAT.RELEASE)
+# 	mh.getMotor(2).run(Adafruit_MotorHAT.RELEASE)
+# 	mh.getMotor(3).run(Adafruit_MotorHAT.RELEASE)
+# 	mh.getMotor(4).run(Adafruit_MotorHAT.RELEASE)
+# atexit.register(turnOffMotors)
+#
+# lr_motor = 			mh.getMotor(4)
+# shoulder_motor = 	mh.getMotor(3)
+# elbow_motor = 		mh.getMotor(1)
+# wrist_motor = 		mh.getMotor(2)
 
 CHAT_MSG = re.compile(r"^:\w+!\w+@\w+\.tmi\.twitch\.tv PRIVMSG #\w+ :")
 

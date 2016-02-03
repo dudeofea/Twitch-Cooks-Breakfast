@@ -9,6 +9,8 @@
 import pygame
 import pygame.camera
 from pygame.locals import *
+import cfg, socket, time, re, atexit, datetime
+from threading import Thread
 
 PINK1			= (255,	158,174)
 RED1			= (219,	80,	74)
@@ -21,6 +23,8 @@ SIZE = (1500, 1000)				#width / height, set at runtime
 CAMERA_SIZE = (800, 600)
 FILENAME = 'capture.png'
 
+CHAT_MSG = re.compile(r"^:\w+!\w+@\w+\.tmi\.twitch\.tv PRIVMSG #\w+ :")
+
 class ChatSurface(pygame.Surface):
 	def __init__(self, size_wh, header_font, text_font, text_font_bold):
 		pygame.Surface.__init__(self, size_wh)
@@ -31,12 +35,32 @@ class ChatSurface(pygame.Surface):
 		self.text_height 	= self.text_font.render("some sentence", 1, LIGHT).get_height()
 		self.max_lines 		= int((self.size_wh[1] - 100) / (self.text_height+2))
 		self.lines = []
+		self.running = True
+		self.chat_thread 	= Thread(target = self.read_chat)
+		self.chat_thread.start()
 	def add_line(self, user, comment, color=DARK):
 		#add to front of list
 		self.lines.insert(0, (user, comment, color))
 		#clip list when neccesary
 		if len(self.lines) > self.max_lines:
 			self.lines = self.lines[:self.max_lines]
+	def read_chat(self):
+		s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+		s.connect((cfg.HOST, cfg.PORT))
+		s.send("PASS {}\r\n".format(cfg.PASS).encode("utf-8"))
+		s.send("NICK {}\r\n".format(cfg.NICK).encode("utf-8"))
+		s.send("JOIN {}\r\n".format(cfg.CHAN).encode("utf-8"))
+		while self.running:
+			response = s.recv(1024).decode("utf-8")
+			print response
+			for r in response.split('\r\n'):
+				if r == "PING :tmi.twitch.tv\r\n":
+				    s.send("PONG :tmi.twitch.tv\r\n".encode("utf-8"))
+				elif len(r) > 0 and CHAT_MSG.match(r):
+					username = re.search(r"\w+", r).group(0) # return the entire match
+					message = CHAT_MSG.sub("", r)
+					self.add_line(username, message)
+					#print(username + ": " + message)
 	def draw(self, screen):
 		#draw white background
 		self.fill(LIGHT)
@@ -55,6 +79,8 @@ class ChatSurface(pygame.Surface):
 		self.blit(header_label, (header_pad, 10))
 		#draw on screen
 		screen.blit(self, (SIZE[0] - self.size_wh[0], 0))
+	def stop(self):
+		self.running = False
 
 def main():
 	#init game, camera, display
@@ -91,6 +117,7 @@ def main():
 			elif event.type == KEYDOWN and event.key == K_s:
 				pygame.image.save(camera_surface, FILENAME)
 	#die
+	chat_surface.stop()
 	camera.stop()
 	pygame.quit()
 
