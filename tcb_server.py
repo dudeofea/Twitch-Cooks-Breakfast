@@ -24,6 +24,16 @@ CAMERA_SIZE = (800, 600)
 FILENAME = 'capture.png'
 
 CHAT_MSG = re.compile(r"^:\w+!\w+@\w+\.tmi\.twitch\.tv PRIVMSG #\w+ :")
+CHAT_COMMANDS = [
+	(['l', 'left'], 			"MOVE 4 BW 255"),
+	(['r', 'right'], 			"MOVE 4 FW 255"),
+	(['su', 'shoulder up'], 	"MOVE 3 BW 255"),
+	(['sd', 'shoulder down'], 	"MOVE 3 FW 255"),
+	(['eu', 'elbow up'], 		"MOVE 1 FW 255"),
+	(['ed', 'elbow down'], 		"MOVE 1 BW 255"),
+	(['wu', 'wrist up'], 		"MOVE 2 FW 255"),
+	(['wd', 'wrist down'], 		"MOVE 2 BW 255"),
+]
 
 class ChatSurface(pygame.Surface):
 	def __init__(self, size_wh, header_font, text_font, text_font_bold):
@@ -45,14 +55,23 @@ class ChatSurface(pygame.Surface):
 		if len(self.lines) > self.max_lines:
 			self.lines = self.lines[:self.max_lines]
 	def read_chat(self):
+		#wait for connection from spatulabot
+		bot_s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+		bot_s.bind(('', 8888))
+		bot_s.listen(10)
+		conn, addr = bot_s.accept()
+		print 'Connected with ' + addr[0] + ':' + str(addr[1])
+		#connect to twitch
 		s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 		s.connect((cfg.HOST, cfg.PORT))
 		s.send("PASS {}\r\n".format(cfg.PASS).encode("utf-8"))
 		s.send("NICK {}\r\n".format(cfg.NICK).encode("utf-8"))
 		s.send("JOIN {}\r\n".format(cfg.CHAN).encode("utf-8"))
+		done_wait = datetime.datetime.now()
 		while self.running:
 			response = s.recv(1024).decode("utf-8")
-			print response
+			if datetime.datetime.now() < done_wait:
+				continue
 			for r in response.split('\r\n'):
 				if r == "PING :tmi.twitch.tv\r\n":
 				    s.send("PONG :tmi.twitch.tv\r\n".encode("utf-8"))
@@ -60,7 +79,14 @@ class ChatSurface(pygame.Surface):
 					username = re.search(r"\w+", r).group(0) # return the entire match
 					message = CHAT_MSG.sub("", r)
 					self.add_line(username, message)
-					#print(username + ": " + message)
+					#check if matches a command
+					for c in CHAT_COMMANDS:
+						if message in c[0]:
+							bot_s.send(c[1]+'\r\n')
+							#timeout
+							done_wait = datetime.datetime.now() + datetime.timedelta(seconds=12)
+		s.close()
+		bot_s.close()
 	def draw(self, screen):
 		#draw white background
 		self.fill(LIGHT)
@@ -97,8 +123,6 @@ def main():
 	#initialize surfaces
 	camera_surface = pygame.surface.Surface(CAMERA_SIZE, 0, screen)
 	chat_surface = ChatSurface((400, SIZE[1]), leckerli_font, anon_font, anon_font_bold)
-	chat_surface.add_line("Some Guy", "Hey buttmunch")
-	chat_surface.add_line("anon353424", "wuuutttttttttttt")
 	print chat_surface.lines
 	capture = True
 	while capture:
