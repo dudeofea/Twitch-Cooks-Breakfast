@@ -57,7 +57,7 @@ class ChatSurface(pygame.Surface):
 	def read_chat(self):
 		#wait for connection from spatulabot
 		bot_s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-		bot_s.bind(('', 8888))
+		bot_s.bind(('', 9000))
 		bot_s.listen(10)
 		conn, addr = bot_s.accept()
 		print 'Connected with ' + addr[0] + ':' + str(addr[1])

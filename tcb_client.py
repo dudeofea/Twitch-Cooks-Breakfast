@@ -14,7 +14,7 @@ atexit.register(turnOffMotors)
 
 # network functions go here
 s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-s.connect(('192.168.1.6', 8888))
+s.connect(('192.168.1.6', 9000))
 
 while True:
 	response = s.recv(1024).decode("utf-8")
